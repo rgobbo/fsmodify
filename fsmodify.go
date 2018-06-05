@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 )
 
-var LastModify time.Time
+var lastModify time.Time
 var timeInterval time.Duration
 type fnHandler func(string)
 
 func NewWatcher(pathToWatch string, extension string, interval int, fn fnHandler) {
-	LastModify = time.Now()
+	lastModify = time.Now()
 	timeInterval = time.Duration(time.Duration(interval) * time.Second)
 
 	for {
@@ -20,7 +20,7 @@ func NewWatcher(pathToWatch string, extension string, interval int, fn fnHandler
 			break;
 		}
 		time.Sleep(timeInterval)
-		LastModify = time.Now()
+		lastModify = time.Now()
 	}
 }
 
@@ -41,10 +41,16 @@ func watchFiles(path string, ext string, fn fnHandler) (error) {
 
 	for _, f := range files {
 		fileExt := filepath.Ext(f.Name())
-		if fileExt == ext {
-			diff := LastModify.Sub(f.ModTime())
+		if ext != "" {
+			if fileExt == ext {
+				diff := lastModify.Sub(f.ModTime())
+				if diff < timeInterval {
+					fn(f.Name())
+				}
+			}
+		} else {
+			diff := lastModify.Sub(f.ModTime())
 			if diff < timeInterval {
-				//fmt.Printf("arquivo alterado : %v \n", f.Name())
 				fn(f.Name())
 			}
 		}
