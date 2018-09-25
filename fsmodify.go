@@ -1,13 +1,14 @@
 package fsmodify
 
 import (
-	"io/ioutil"
-	"time"
+	"os"
 	"path/filepath"
+	"time"
 )
 
 var lastModify time.Time
 var timeInterval time.Duration
+
 type fnHandler func(string)
 
 func NewWatcher(pathToWatch string, extension string, interval int, fn fnHandler) {
@@ -17,7 +18,7 @@ func NewWatcher(pathToWatch string, extension string, interval int, fn fnHandler
 	for {
 		err := watchFiles(pathToWatch, extension, fn)
 		if err != nil {
-			break;
+			break
 		}
 		time.Sleep(timeInterval)
 		lastModify = time.Now()
@@ -32,14 +33,8 @@ func NewWatcher(pathToWatch string, extension string, interval int, fn fnHandler
 //}
 
 // Example : LoadListFiles("/Users/test", ".html")
-func watchFiles(path string, ext string, fn fnHandler) (error) {
-
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range files {
+func watchFiles(dirPath string, ext string, fn fnHandler) error {
+	err := filepath.Walk(dirPath, func(path string, f os.FileInfo, err error) error {
 		fileExt := filepath.Ext(f.Name())
 		if ext != "" {
 			if fileExt == ext {
@@ -47,6 +42,7 @@ func watchFiles(path string, ext string, fn fnHandler) (error) {
 				if diff < timeInterval {
 					fn(f.Name())
 				}
+
 			}
 		} else {
 			diff := lastModify.Sub(f.ModTime())
@@ -54,7 +50,32 @@ func watchFiles(path string, ext string, fn fnHandler) (error) {
 				fn(f.Name())
 			}
 		}
-	}
 
-	return nil
+		return nil
+	})
+	return err
+
+	// files, err := ioutil.ReadDir(path)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for _, f := range files {
+	// 	fileExt := filepath.Ext(f.Name())
+	// 	if ext != "" {
+	// 		if fileExt == ext {
+	// 			diff := lastModify.Sub(f.ModTime())
+	// 			if diff < timeInterval {
+	// 				fn(f.Name())
+	// 			}
+	// 		}
+	// 	} else {
+	// 		diff := lastModify.Sub(f.ModTime())
+	// 		if diff < timeInterval {
+	// 			fn(f.Name())
+	// 		}
+	// 	}
+	// }
+
+	// return nil
 }
